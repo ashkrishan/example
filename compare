@@ -1,0 +1,124 @@
+##Compare_releases
+import os
+from win32api import GetFileVersionInfo, LOWORD, HIWORD
+import shutil
+
+#Global variables
+versionFile = r'c:\output\VersionComparison-test.csv'
+new_release_path = r'c:\test\NewRelease'
+targetDir = r'c:\test\LiberateTrain\AutoUpdates'
+backup_config_folder = os.path.join(new_release_path,"Backup-Config-files")
+#liberate_folder = "Liberate"
+#ignore_backup_folder = os.path.join(targetDir,"Backup")
+#ignore_source_liberate_folder = os.path.join(new_release_path,"Liberate")
+#ignore_target_liberate_folder = os.path.join(targetDir,"Liberate")
+
+
+
+def file_list(mypath):
+    file_list = []
+    full_path_list = []
+    for root, dirs, files in os.walk(myPath):
+        for f in files:
+            #print f
+            if os.path.isfile(os.path.join(root,f)):
+                f = f.lower() # Convert .EXE to .exe so next line wo
+                if (f.count('.exe') or f.count('.dll')): # Check only exe or dll files
+                    fullPathToFile  = os.path.join(root,f)
+                    #file_list.append(f)
+                    full_path_list(fullPathToFile)
+    return fullPathToFile
+
+def do_version_comparison(myPath, myPath2, outfile):
+    #sourcefile_list = []
+    #targetfile_list = []
+    writer = open(outfile, 'w')
+    writer.writelines("NewRelease Directory,NewRelease File Name, NewRelease File Version,Target Directory,Target Filename,Target File Version\n")
+    for root, dirs, files in os.walk(myPath, topdown=False):
+        for root2, dirs2, files2 in os.walk(myPath2, topdown=False):
+        #dirs[:] = [d for d in dirs if d not in backup_config_folder]
+        #dirs[:] = [d for d in dirs if d not in ignore_source_liberate_folder]
+        #dirs[:] = [d for d in ]
+            for f in files:
+                #print f
+                if os.path.isfile(os.path.join(root,f)):
+                    f = f.lower() # Convert .EXE to .exe so next line wo
+                    if (f.count('.exe') or f.count('.dll')): # Check only exe or dll files
+                        fullPathToFile  = os.path.join(root,f)
+                        src_path_split = fullPathToFile.split("\\")
+                        src_dir_file_only = "\\".join(src_path_split[-2:])
+                        #sourcefile_list.append(f)
+                        
+                        
+                            #dirs2[:] = [d for d in dirs if d not in ignore_backup_folder]
+                            #dirs2[:] = [d for d in dirs if d not in ignore_target_liberate_folder]
+                        for f2 in files2:
+                                f2 = f2.lower() #Convert .EXE to .exe so next line works
+                        #if (file.count('.exe') or file.count('.dll')): # Check only exe or dll files
+                                if  (f2.count('.exe') or f2.count('.dll')):
+                                    fullPathToFile2  = os.path.join(root2,f2)
+                                    #print fullPathToFile2
+                                    print fullPathToFile
+                                    print fullPathToFile2
+                                    dst_path_split = fullPathToFile.split("\\")
+                                    dst_dir_file_only = "\\".join(dst_path_split[-2:])
+                                    print dst_dir_file_only
+                                    if (src_dir_file_only == dst_dir_file_only and f == f2):
+                                        #print src_dir_file_only
+                                        major,minor,subminor,revision= get_version_info(fullPathToFile)
+                                        major2,minor2,subminor2,revision2= get_version_info(fullPathToFile2)
+                                        #writer.writelines("%s,%s.%s.%s.%s,%s,%s.%s.%s.%s\n" % (fullPathToFile,major,minor,subminor,revision,fullPathToFile2,major2,minor2,subminor2,revision2))
+                                        #print ("%s,%s.%s.%s.%s,%s,%s.%s.%s.%s\n" % (fullPathToFile,major,minor,subminor,revision,fullPathToFile2,major2,minor2,subminor2,revision2))    
+                                        sourceversion = map(int, [major,minor,subminor,revision])
+                                        targetversion = map(int,[major2,minor2,subminor2,revision2])
+                                        #print sourceversion
+                                        #print src_dir_file_only, dst_dir_file_only
+                                        #print ("This is a sourceversion %s " % sourceversion)
+                                        #print ("This is a targetversion %s " % targetversion)                                    
+                                        #testdir = os.path.dirname(fullPathToFile)
+                                        if (src_dir_file_only == dst_dir_file_only and fullPathToFile == fullPathToFile2 and major > major2):
+                                            #print "patch-source major version is greater than current target version, apply patch to target"
+                                            writer.writelines("%s,%s,%s.%s.%s.%s,%s,%s,%s.%s.%s.%s\n" % (fullPathToFile,src_dir_file_only,major,minor,subminor,revision,fullPathToFile2,dst_dir_file_only,major2,minor2,subminor2,revision2))
+                                            break
+                                            #shutil.copy2(fullPathToFile,fullPathToFile2) 
+                                        '''
+                                        elif (src_dir_file_only == dst_dir_file_only and major == major2 and minor > minor2):
+                                            #print "patch-source minor version is greater than current target version, apply patch to target"
+                                            writer.writelines("%s,%s,%s.%s.%s.%s,%s,%s,%s.%s.%s.%s\n" % (src_dir_file_only,f,major,minor,subminor,revision,dst_dir_file_only,f2,major2,minor2,subminor2,revision2))
+                                            break
+                                            #shutil.copy2(fullPathToFile,fullPathToFile2) 
+                                        elif (src_dir_file_only == dst_dir_file_only and major == major2 and minor == minor2 and subminor > subminor2):
+                                            #print "patch-source subminor version is greater than current target version, apply patch to target"
+                                            writer.writelines("%s,%s,%s.%s.%s.%s,%s,%s,%s.%s.%s.%s\n" % (src_dir_file_only,f,major,minor,subminor,revision,dst_dir_file_only,f2,major2,minor2,subminor2,revision2))
+                                            #shutil.copy2(fullPathToFile,fullPathToFile2)
+                                            break
+                                        elif (src_dir_file_only == dst_dir_file_only and major == major2 and minor == minor2 and subminor == subminor2 and revision > revision2):
+                                            #print "patch-source revision version is greater than current target version, apply patch to target"
+                                            writer.writelines("%s,%s,%s.%s.%s.%s,%s,%s,%s.%s.%s.%s\n" % (src_dir_file_only,f,major,minor,subminor,revision,dst_dir_file_only,f2,major2,minor2,subminor2,revision2))
+                                            #shutil.copy2(fullPathToFile,fullPathToFile2)
+                                            break
+                                        '''
+                                    #break
+                               #break                    #break
+                                #else:
+                                    #print "There is no latest patch release available for %s this file" % f
+    writer.close()
+    
+
+#Helper function
+def get_version_info(filename):
+    try:
+        info = GetFileVersionInfo(filename, "\\")
+        ms = info['FileVersionMS']
+        ls = info['FileVersionLS']
+        return HIWORD (ms), LOWORD (ms), HIWORD (ls), LOWORD (ls)
+    except:
+    	return 0,0,0,0   
+
+
+if __name__ == '__main__':
+    #targetDir = r'c:\LiberateDev'
+    #print (sourceDir,targetDir,resultFile)
+    do_version_comparison(new_release_path,targetDir,versionFile)#!/usr/bin/env python
+    
+
