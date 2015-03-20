@@ -1,0 +1,180 @@
+
+import fnmatch
+import os
+import shutil
+#import time
+import sys
+from openpyxl import Workbook
+from openpyxl.compat import range as xlrange
+#import getpass
+import zipfile
+#import glob
+#
+reload(sys)  
+sys.setdefaultencoding('utf-8')
+
+
+def main():
+       # extensions_pattern1 = ['*.EXE', '*.DLL', '*.SYS']
+    #list_file1 = r'c:\test\output\list1.csv'
+    #dir_to_search1 = r'c:\test\LiberateDev'
+   # move_to_dir = r'c:\test\output\move_dir_1'
+    #For List 2 
+    #extensions_pattern2 = ['*.AVI', '*.MPG', '*.WMV', '*.MP3', '*.WAV', '*JPG', '*.BMP', '*.JPEG', '*.MPEG', '*.MOV', '*.MTS', '*.ASF', '*.WMF', '*.MP4']
+    extensions_pattern2 = ['*.EML', '*.MSG', '*.PST']
+    extensions_pattern3 = ['*.ZIP']
+    #extensions_pattern3 = ['']
+    list_file2 = unicode(r'c:\test\dig-zip-casefiles.csv', 'utf-8')
+    #list_file2 = r'c:\test\test-file.xlsx'
+    
+    #dir_to_search2 = r'c:\test\LiberateDev'
+    dir_to_search2 = r'E:\CaseFiles'
+    #list_files_and_move(dir_to_search1,extensions_pattern1,list_file1,move_to_dir)  # call function list files and move them to new folder
+    zip_list_files_only(dir_to_search2,extensions_pattern3,list_file2)      #Only list files
+    
+
+
+def list_files_and_move(dir_to_search, extensions, out_file,move_dir):
+    writer = open(out_file, 'w')
+    writer.writelines("Filepath,Extension,Size,MB/KB\n")
+    for root, dirs, files in os.walk(dir_to_search):
+        for extension in extensions:
+            extension = extension.lower()
+            for fil in fnmatch.filter(files,extension):
+                filename = unicode(os.path.join(root,fil), 'utf8')
+                file_attr = float(os.path.getsize(filename))
+                #(mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(filename)
+                #modified_time = time.ctime(mtime)
+                if file_attr > (1024 * 1024): #if file size is greater then 1024K convert it to MB
+                    file_attr = float(file_attr/(1024 * 1024))   # in MB
+                    writer.writelines("%s,%s,%.2f,MB\n" % (filename,extension,round(file_attr,2)))
+                else:
+                    file_attr = float(file_attr/(1024))   # in KB
+                    writer.writelines("%s, %s,%.2f,KB\n" % (filename,extension,round(file_attr,2)))
+                #Create destination directory to store pattern matched files.
+                splitdir = (os.path.dirname(filename).split('\\'))[1:]
+                print splitdir
+                joindirs = os.path.join(*splitdir)
+                destdir = os.path.join(move_dir,joindirs)
+                if not os.path.isdir(destdir):
+                    os.makedirs(destdir)
+                ####shutil.move(filename,destdir)      #uncoment when ready to move files to another folder when setting live
+    writer.close()
+
+
+#Saves to Xlsx
+def list_files_only(dir_to_search, extensions, out_file):
+    logfile = open(r'c:\test\log.txt', 'w')
+    wb = Workbook()
+    ws1 = wb.active
+    ws1.title = "Sheet name"    
+    writer =  open(out_file, 'w')  
+    ws1.append(("Filepath","Extension","Size","MB/KB"))
+    for root, dirs, files in os.walk(dir_to_search.decode('utf-8')):
+        for extension in extensions:
+            extension = extension.lower()
+            #print "Looking for %s files..please wait..", extension
+            for fil in fnmatch.filter(files,extension):
+                #fil = fil.encode('utf8')
+                try:
+                    filename = os.path.join(root,fil.decode('utf-8'))
+                    file_attr = float(os.path.getsize(filename))
+                    if file_attr > (1024 * 1024): #if file size is greater then 1024K convert it to MB
+                        file_attr = float(file_attr/(1024 * 1024))   # in MB
+                        ws1.append((filename,extension,round(file_attr,2),"MB"))
+                    else:
+                        file_attr = float(file_attr/(1024))   # in KB
+                        ws1.append((filename,extension,round(file_attr,2),"KB"))
+                except Exception as e:
+                    #logfile.writelines(e)
+                    print e
+                    #pass
+                #writer.writelines("%s,%s,MB\n" % (filename,extension))
+    logfile.close()
+    wb.save(filename=out_file)
+
+def test_list_files_only(dir_to_search, extensions, out_file):
+    logfile = open(r'c:\test\log.txt', 'w')
+    #wb = Workbook()
+    #ws1 = wb.active
+    #ws1.title = "Sheet name"    
+    writer =  open(out_file, 'w')  
+    writer.writelines("Filepath, Extension,Size,MB/KB\n")
+    for root, dirs, files in os.walk(dir_to_search.decode('utf-8')):
+        for extension in extensions:
+            extension = extension.lower()
+            #print "Looking for %s files..please wait..", extension
+            for fil in fnmatch.filter(files,extension):
+                #fil = fil.encode('utf8')
+                try:
+                    filename = os.path.join(root,fil.decode('utf-8'))
+                    file_attr = float(os.path.getsize(filename))
+                    if file_attr > (1024 * 1024): #if file size is greater then 1024K convert it to MB
+                        file_attr = float(file_attr/(1024 * 1024))   # in MB
+                        writer.writelines("%s,%s,%.2f,MB\n" % (filename,extension,round(file_attr,2)))
+                    else:
+                        file_attr = float(file_attr/(1024))   # in KB
+                        writer.writelines("%s,%s,%.2f,KB\n" % (filename,extension,round(file_attr,2)))
+                except Exception as e:
+                    #logfile.writelines(e)
+                    print e
+                    #pass
+                #writer.writelines("%s,%s,MB\n" % (filename,extension))
+    logfile.close()
+    writer.close()
+   # wb.save(filename=out_file)
+
+def zip_list_files_only(dir_to_search, extensions, out_file):
+    #logfile = open(r'c:\test\log.txt', 'w')
+    #wb = Workbook()
+    #ws1 = wb.active
+    #ws1.title = "Sheet name"    
+    writer =  open(out_file, 'wb')  
+    writer.writelines("Filepath, File within zip,Size,MB/KB\n")
+    for root, dirs, files in os.walk(dir_to_search.decode('utf-8')):
+        for extension in extensions:
+            extension = extension.lower()
+            #print "Looking for %s files..please wait..", extension
+            for fil in fnmatch.filter(files,extension):
+                #fil = fil.encode('utf8')
+                    try:
+                        filename = os.path.join(root,fil.decode('utf-8'))
+                        zf = zipfile.ZipFile(filename.decode('utf-8'), 'r')
+                    except Exception as e:
+                        filename = os.path.join(root.decode('utf-8').strip(),fil.decode('utf-8').strip())
+                        zf = zipfile.ZipFile(filename.encode('utf-8'), 'r')
+                        #filename = os.path.join(root,fil.decode('utf-8').strip())
+                        #zf = zipfile.ZipFile(filename.decode('utf-8').strip(), 'r')
+                        #print filename
+                        print e    
+                        #print filename
+                    
+                        #for ext in ['*.TXT']:
+                        #ext = ext.lower()
+                    for name in zf.namelist():
+                            #for eml in glob.glob('*.eml'):
+                                #print fzip
+                                #print eml
+                                #file_attr = float(os.path.getsize(filename))
+                        info = zf.getinfo(name)
+                        if name.find('.eml')!= -1:                            #zf
+                                    #print name
+                            writer.writelines("%s,%s,%s,%d,KB\n" % (filename,name, "*.eml", (info.file_size/1024)))
+                            if name.find('.msg')!= -1:
+                                    #print name
+                                writer.writelines("%s,%s,%s,%d,KB\n" % (filename,name, "*.msg", (info.file_size/1024)))
+                        #else:
+                            #print '%s is %d bytes' % (info.filename, info.file_size)
+    
+                    zf.close()
+
+                #writer.writelines("%s,%s,MB\n" % (filename,extension))
+    #logfile.close()
+    writer.close()
+    
+
+
+        
+if __name__ == '__main__':
+    main()
+    
